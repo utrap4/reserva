@@ -1,7 +1,7 @@
 <?php
 namespace App;
 use PDO;
-use PDOExecption;
+use PDOException;
 class DataBase{
     const HOST = 'localhost';
     const USER = 'root';
@@ -16,9 +16,9 @@ class DataBase{
     private function setConnection(){
         try{
             $this->connection = new PDO
-            ('mysql:'.self::HOST.';dbname='.self::DB,self::USER,self::PASS);
-            //$this->connection->setAtribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXECEPTION);
-        }catch(PDOExecption $e){
+            ('mysql:host='.self::HOST.';dbname='.self::DB,self::USER,self::PASS);
+            $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        }catch(PDOException $e){
             die('ERROR: '.$e->getMessage());
         }        
     }
@@ -30,7 +30,7 @@ class DataBase{
             $statement = $this->connection->prepare($query);
             $statement->execute($values);
             return $statement;
-        }catch(PDOExecption $e){
+        }catch(PDOException $e){
             die('ERROR: '.$e->getMessage());
         }
     }
@@ -40,16 +40,27 @@ class DataBase{
         $query = "INSERT INTO ".$this->table." (".implode(', ',$fields).")
         VALUES(".implode(', ',$binds).")";
         $this->execute($query,array_values($array));
+        return $this->connection->lastInsertId();
+    }
+    
+    public function update($where,$array){
+        $fields = array_keys($array);
+        $query = "UPDATE ".$this->table." SET ".implode('=?, ',$fields).'=? WHERE '.$where;
+        $this->execute($query,array_values($array));
         return true;
-        
     }
-    public function update($id,$array){
-        
+    public function delete($where){
+        $query = "DELETE FROM ".$this->table." WHERE ".$where;
+        $this->execute($query);
+        return true;
     }
-    public function delete($id){
+    public function select($where = null, $order = null, $limit = null, $fields = '*'){
         
-    }
-    public function select(){
-        
+        $where = strlen($where) ? ' WHERE '.$where : '';
+        $order = strlen($order) ? ' ORDER BY '.$order : '';
+        $limit = strlen($limit) ? ' LIMIT '.$limit : '';
+
+        $query = "SELECT ".$fields." FROM ".$this->table . $where . $order .$limit ;
+        return $this->execute($query);
     }
 }
